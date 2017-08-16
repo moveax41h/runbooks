@@ -66,7 +66,7 @@ Use `CreateFileA` with the name specified above passed into the lpFileName argum
 #### Unmap memory 
 `NtUnmapViewOfSection`
 #### Change access permissions
-`VirtualAllocEx`
+`VirtualProtectEx`
 
 #### Set Extra Window Memory
 `SetWindowLongPtr`

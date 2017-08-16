@@ -19,7 +19,7 @@ Allows multiple readers into the critical section, but only one writer.
 
 #### Preventing Race Conditions
 In order to be certain that two threads can't grab a mutex at the same instant and create a "race condition", we must use one single atomic instruction which both checks *and grabs* the mutex in one instruction. One instruction is Bit Test and Set (BTS). It moves the bit into the Carry Flag (CF) to test it but it also simultaneously sets the bit to 1 in one cycle.
-```
+```assembly
 SpinLock:
   LOCK BTS mutex, 0 ; Test and set bit 0 of mutex, load 0 if its not taken, 1 if it is
   JC SpinLock ; If the carry flag is 1, the mutex is already taken, so spin

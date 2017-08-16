@@ -67,6 +67,13 @@ Use `CreateFileA` with the name specified above passed into the lpFileName argum
 `NtUnmapViewOfSection`
 #### Change access permissions
 `VirtualAllocEx`
+
+#### Set Extra Window Memory
+`SetWindowLongPtr`
+`SetWindowLong` (old)
+#### Read Extra Window Memory
+`GetWindowLongPtr`
+
 ### Atom Tables
 
 #### Add data to global atom table

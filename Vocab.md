@@ -40,7 +40,7 @@ The IDT can be viewed in WinDbg with the command `!idt`
 
 
 ### sysenter stuff
-`sysenter`, `syscall`, and (obsolete) `int 0x2e` are used to "bridge the gap" from userland to kernel mode. The way this works is that a userland routine places a code which corresponds to a given kernel function (inside of the System Service Descriptor Table) inside of eax. It then executes the instruction `sysenter` which calls `KiFastSystemCall`. This routine takes the code from eax and searches the SSDT and eventually the `KiServiceTable` table which is an array of function pointers which serves as the lookup table for the code placed in eax. This tells the kernel which function to execute and at this point, it also fetches the stack and passes in the arguments as well.
+`sysenter`, `syscall`, and (obsolete) `int 0x2e` are used to "bridge the gap" from userland to kernel mode. The way this works is that a userland routine places a code which corresponds to a given kernel function (inside of the System Service Descriptor Table) inside of eax. It then executes the instruction `sysenter` which calls `KiFastSystemCall`. This routine takes the code from eax and searches the *System Service **descriptor** table* -> *System Service Table* which finally has a pointer to an array of function pointers, which is called the *System Service **Dispatch** Table* (`KiServiceTable`) which serves as the lookup table for the code placed in eax. This tells the kernel which function to execute and at this point, it also fetches the stack and passes in the arguments as well.
 
 See the SSDT in code:
 ```C
@@ -55,5 +55,29 @@ typedef struct _KSERVICE_DESCRIPTOR_TABLE
 These tables can be viewed with the following WinDbg commands:
 
 ```
+dps nt!KeServiceDescriptorTable
 dps nt!KiServiceTable L200
 ```
+
+example output shows that in Win 7 there are 401 (0x191) entries in the Service Dispatch Table:
+```
+1: kd> dps nt!KeServiceDescriptorTable
+fffff800`02b10840  fffff800`028e0300 nt!KiServiceTable
+fffff800`02b10848  00000000`00000000
+fffff800`02b10850  00000000`00000191
+fffff800`02b10858  fffff800`028e0f8c nt!KiArgumentTable
+fffff800`02b10860  00000000`00000000
+fffff800`02b10868  00000000`00000000
+fffff800`02b10870  00000000`00000000
+fffff800`02b10878  00000000`00000000
+fffff800`02b10880  fffff800`028e0300 nt!KiServiceTable
+fffff800`02b10888  00000000`00000000
+fffff800`02b10890  00000000`00000191
+fffff800`02b10898  fffff800`028e0f8c nt!KiArgumentTable
+fffff800`02b108a0  fffff960`00191f00 win32k!W32pServiceTable
+fffff800`02b108a8  00000000`00000000
+fffff800`02b108b0  00000000`0000033b
+fffff800`02b108b8  fffff960`00193c1c win32k!W32pArgumentTable
+```
+
+

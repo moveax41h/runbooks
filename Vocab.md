@@ -36,8 +36,10 @@ Other options: Bit Test and Reset (BTR), Bit Test and Complement (BTC), Compare 
 #### Interrupts
 Intel architecture has an Interrupt Descriptor Table (IDT) of 256 interrupt structures, each of which is a struct that defines an interrupt handler for the given code. The address of the IDT is stored in a register called the IDT Register (IDTR). When the int command is received with a given code, the proc stops what it's doing and looks the code up in the IDT to determine how to act. Some of these codes are predefined by the architecture, while the majority (32-255) can be utilized however the OS wants.
 
+The IDT can be viewed in WinDbg with the command `!idt`
 
-###sysenter stuff
+
+### sysenter stuff
 `sysenter`, `syscall`, and (obsolete) `int 0x2e` are used to "bridge the gap" from userland to kernel mode. The way this works is that a userland routine places a code which corresponds to a given kernel function (inside of the System Service Descriptor Table) inside of eax. It then executes the instruction `sysenter` which calls `KiFastSystemCall`. This routine takes the code from eax and searches the SSDT and eventually the `KiServiceTable` table which is an array of function pointers which serves as the lookup table for the code placed in eax. This tells the kernel which function to execute and at this point, it also fetches the stack and passes in the arguments as well.
 
 See the SSDT in code:

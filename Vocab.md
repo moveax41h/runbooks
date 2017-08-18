@@ -40,7 +40,7 @@ The IDT can be viewed in WinDbg with the command `!idt`
 
 
 ### sysenter stuff
-`sysenter`, `syscall`, and (obsolete) `int 0x2e` are used to "bridge the gap" from userland to kernel mode. The way this works is that a userland routine places a code which corresponds to a given kernel function (inside of the System Service Descriptor Table) inside of eax. It then executes the instruction `sysenter` which calls `KiFastSystemCall`. This routine takes the code from eax and searches the *System Service **descriptor** table* -> *System Service Table* which finally has a pointer to an array of function pointers, which is called the *System Service **Dispatch** Table* (`KiServiceTable`) which serves as the lookup table for the code placed in eax. This tells the kernel which function to execute and at this point, it also fetches the stack and passes in the arguments as well.
+`sysenter`, `syscall`, and (obsolete) `int 0x2e` are used to "bridge the gap" from userland to kernel mode. The way this works is that a userland routine places a code which corresponds to a given kernel function (inside of the System Service Descriptor Table) inside of eax. It then executes the instruction `sysenter` which calls `KiFastSystemCall`. This routine takes the code, called the Dispatch ID, from eax and searches the *System Service **descriptor** table* -> *System Service Table* which finally has a pointer to an array of function pointers, which is called the *System Service **Dispatch** Table* (`KiServiceTable`) which serves as the lookup table for the Dispatch ID placed in eax. This tells the kernel which function to execute and at this point, it also fetches the stack and passes in the arguments as well.
 
 See the SSDT in code:
 ```C
@@ -80,4 +80,17 @@ fffff800`02b108b0  00000000`0000033b
 fffff800`02b108b8  fffff960`00193c1c win32k!W32pArgumentTable
 ```
 
+sysenter is Intel's version, syscall is AMD's version of the instruction. It was created because int 0x2e was having to be called so often (many thousand times per second) that it was affecting performance since interrupts come with overhead.
+### Implementation Differences between int 0x2e and sysenter
+#### int 0x2e
+The difference between int 0x2e and the more modern sysenter is that int 0x2e is legacy and also int 0x2e was used by first placing the proper kernel routine code in eax then having a user-mode routine mov an offset to `SharedUserData!SystemCallStub` into a register and then calling it. The call to `SystemCallStub` leads to one final user-mode routine being called: `ntdll!KiIntSystemCall` which places a pointer to the stack in edx and then finally executes the `int 2Eh` before returning.
 
+#### sysenter (always used on x64 systems)
+sysenter works a bit different. It uses a dedicated, hardware-provided path to the kernel mode system service handler, called `nt!KiFastCallEntry`. The "path" that the CPU provides is that the OS loads the address to `KiFastCallEntry` into the MSR register during system boot. That way, the CPU has this address inside of it at all times and does not have to deal with an interrupt. On x64, the routines which use sysenter or syscall simply place the stack ptr in r10 func code in eax and then call `syscall` or `sysenter` and that's it. For x86, they place the `SharedUserData!SystemCallStub` into edx then call it, which leads to `ntdll!KiFastSystemCall` which moves the stack ptr into edx and then executes `sysenter` or `syscall`, much like the int 2Eh method.
+
+View the MSR reg (SYSENTER_EIP_MSR) with this command in WinDbg:
+`rdmsr 176`
+then take that address which is returned and do
+`ln [adr]`
+
+Dispatch IDs up to 0xFFF will be retrieved from `nt!KiServiceTable` SSDT and Dispatch IDs between 0x1000 and 0x1FFF will be retrieved from `win32k!W32pServiceTable` SSDT.

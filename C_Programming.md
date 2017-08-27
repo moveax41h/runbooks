@@ -25,3 +25,9 @@ In order to "move" a string into an array, which is not a read-only type, either
 
 In C, it is not okay to say `mySizedArray = "This is a test.\n";`
 This won't work because there is no such thing as a string object in C, so strcpy was made to help solve this problem.
+
+### Pointers, Arrays, and Functions
+
+Passing a char array[] is the same as passing a char * to a function as long as the array[] is not initialized. If it is, then it's an array, no longer a pointer.
+
+Also, functions cannot "return arrays" in C, which is why "output parameters" are often used; you can pass the address of a buffer into the function which will hold the new data. If you don't do this, you will try to pass the address of a locally scoped array which won't work because at the time of return, it will no longer be in memory. A static or global array is another possibility, but it will need to have a set length ahead of time.
